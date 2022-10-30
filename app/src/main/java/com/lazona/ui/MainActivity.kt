@@ -5,12 +5,14 @@ import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
+import android.bluetooth.le.ScanFilter
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.ParcelUuid
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,7 +22,6 @@ import com.lazona.core.parcelable
 import com.lazona.databinding.ActivityMainBinding
 import com.lazona.ui.connectdevice.ConnectWallAdapter
 
-private const val BLUETOOTH_PERMISSIONS = 1
 private const val LOCATION_PERMISSIONS = 2
 
 class MainActivity : AppCompatActivity() {
@@ -105,10 +106,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-
-        if (!bluetoothAdapter.isEnabled or !locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            checkPermissions()
-        }
+        checkPermissions()
     }
 
     override fun onDestroy() {
@@ -148,21 +146,13 @@ class MainActivity : AppCompatActivity() {
                     LOCATION_PERMISSIONS
                 )
             }
-            else -> Unit
+            else -> startBluetoothScan()
         }
     }
 
     private fun startBluetoothScan() {
-        val requestCode = 1;
-        val discoverableIntent: Intent =
-            Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).apply {
-                putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300)
-            }
-        var resultLauncher =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == Activity.RESULT_OK) {
-
-                }
-            }
+        val filter = ScanFilter.Builder().setServiceUuid(
+            ParcelUuid.fromString(ENVIRONMENTAL_SERVICE_UUID.toString())
+        ).build()
     }
 }
