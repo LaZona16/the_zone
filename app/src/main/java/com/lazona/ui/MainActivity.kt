@@ -14,6 +14,8 @@ import android.content.Context
 import android.content.Intent
 import android.location.LocationManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
 import android.widget.Toast
@@ -25,6 +27,7 @@ import com.lazona.core.parcelable
 import com.lazona.databinding.ActivityMainBinding
 import com.lazona.ui.connectdevice.ConnectWallAdapter
 
+private const val BLUETOOTH_PERMISSIONS = 3
 private const val LOCATION_PERMISSIONS = 2
 private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 private const val WALL_CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
@@ -68,19 +71,23 @@ class MainActivity : AppCompatActivity() {
     private val scanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
         .build()
+    @SuppressLint("MissingPermission")
     private val scanCallback = object : ScanCallback() {
-        @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            Log.d("HOLA2", result.device.name ?: "UNNAMED")
-
-            deviceList.add(result.device.name)
+            super.onScanResult(callbackType, result)
+            Log.d("HOLA2", result.device.toString())
+            deviceList.add(result.device.name ?: "UNNAMED")
             binding.recyclerViewDevices.adapter?.notifyDataSetChanged()
-
         }
 
         override fun onScanFailed(errorCode: Int) {
             super.onScanFailed(errorCode)
-            Log.d("HOLA2", "ERROR")
+            Log.d("HOLA2", "error: $errorCode")
+        }
+
+        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+            super.onBatchScanResults(results)
+            Log.d("HOLA2", results.toString())
         }
     }
     private var isScanning = false
@@ -189,6 +196,18 @@ class MainActivity : AppCompatActivity() {
                     LOCATION_PERMISSIONS
                 )
             }
+            shouldShowRequestPermissionRationale(android.Manifest.permission.BLUETOOTH_SCAN) -> {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(
+                        android.Manifest.permission.BLUETOOTH,
+                        android.Manifest.permission.BLUETOOTH_SCAN,
+                        android.Manifest.permission.BLUETOOTH_ADMIN
+                    ),
+                    BLUETOOTH_PERMISSIONS
+                )
+            }
+            else -> startBluetoothScan()
         }
     }
 
@@ -197,16 +216,21 @@ class MainActivity : AppCompatActivity() {
         val filter = ScanFilter.Builder().setServiceUuid(
             ParcelUuid.fromString(WALL_SERVICE_UUID)
         ).build()
+        Log.d("HOLA2", "START")
         isScanning = true
 //        bleScanner.startScan(scanCallback)
-        bleScanner.startScan(null, scanSettings, scanCallback)
-
+//        bleScanner.startScan(null, scanSettings, scanCallback)
+//        Handler(Looper.getMainLooper()).postDelayed({
+//            isScanning = false
+//            bluetoothAdapter.bluetoothLeScanner.stopScan(scanCallback)
+//        }, 10000)
+        bluetoothAdapter.bluetoothLeScanner.startScan(scanCallback)
     }
 
     @SuppressLint("MissingPermission")
     private fun stopBleScan() {
-        bleScanner.stopScan(scanCallback)
-//        bluetoothAdapter.bluetoothLeScanner.stopScan(scanCallback)
+//        bluetoothAdapter.stopLeScan(scanCallback)
+        bluetoothAdapter.bluetoothLeScanner.stopScan(scanCallback)
         isScanning = false
     }
 }
