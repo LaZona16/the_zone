@@ -21,6 +21,7 @@
         android:id="@+id/search_bluetooth_devices_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:text="@string/scan_text"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/recycler_view_devices" />

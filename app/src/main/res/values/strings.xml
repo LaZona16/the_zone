@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">La Zona</string>
+    <string name="scan_text">Escanear</string>
+    <string name="stop_scan_text">Dejar de escanear</string>
 </resources>

@@ -2,6 +2,10 @@ package com.lazona.ui
 
 import android.Manifest
 import android.app.AlertDialog
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import android.bluetooth.le.BluetoothLeScanner
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -11,20 +15,36 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.lazona.R
 import com.lazona.core.PermissionHelper
+import com.lazona.databinding.ActivityMainBinding
 
 
-private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
-private const val WALL_CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
 private const val PERMISSIONS_CODE = 100
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var permissionHelper: PermissionHelper
+    private lateinit var binding: ActivityMainBinding
+    private var isSearching = false
+    private lateinit var bluetoothManager: BluetoothManager
+    private lateinit var bluetoothAdapter: BluetoothAdapter
+    private val bluetoothLowEnergyScan: BluetoothLeScanner by lazy {
+        bluetoothAdapter.bluetoothLeScanner
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionHelper = PermissionHelper(this)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+
+        binding.searchBluetoothDevicesButton.setOnClickListener {
+            isSearching = true
+            binding.searchBluetoothDevicesButton.text = getString(R.string.stop_scan_text)
+        }
+        bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothAdapter = bluetoothManager.adapter
     }
 
     override fun onResume() {
