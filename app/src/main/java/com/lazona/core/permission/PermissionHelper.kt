@@ -7,15 +7,9 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 
 class PermissionHelper (val context: Context) {
-    val permissionLocationList: List<String> = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
-        listOf(
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-    }else{
-        listOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        )
-    }
+    val permissionLocationList: List<String> = listOf(
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
     val permissionBluetoothList: List<String> = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
         listOf(
             Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT

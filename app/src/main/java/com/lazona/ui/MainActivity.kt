@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.*
+import android.os.Build.VERSION_CODES.S
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -45,6 +46,7 @@ class MainActivity : AppCompatActivity() {
     private var permissionResultHandlers =
         mutableMapOf<Int, (Array<out String>, IntArray) -> Unit>()
     private val activityResultHandlers = mutableMapOf<Int, (Int) -> Unit>()
+    private val discoveredDevices = mutableMapOf<String, BluetoothDevice>()
     private val scanSettings: ScanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
         .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
@@ -59,9 +61,12 @@ class MainActivity : AppCompatActivity() {
         @SuppressLint("MissingPermission")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val name: String? = result.scanRecord?.deviceName ?: result.device.name
-            Log.d("DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}")
-            bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
-            result.device.connectGatt(this@MainActivity, false, gattCallback)
+            if(!discoveredDevices.containsKey(result.device.address)){
+                Log.d("DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}")
+                discoveredDevices[result.device.address] = result.device
+            }
+            //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
+            //result.device.connectGatt(this@MainActivity, false, gattCallback)
         }
 
         override fun onScanFailed(errorCode: Int) {
@@ -258,7 +263,7 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("MissingPermission")
     private fun subscribeToIndications(characteristic: BluetoothGattCharacteristic, gatt: BluetoothGatt) {
-        val cccdUuid = UUID.fromString(WALL_SERVICE_UUID)
+        val cccdUuid = UUID.fromString(WALL_CHARACTERISTIC_UUID)
         characteristic.getDescriptor(cccdUuid)?.let { cccDescriptor ->
             if (!gatt.setCharacteristicNotification(characteristic, true)) {
                 Log.e("ERROR", "setNotification(true) failed for ${characteristic.uuid}")
@@ -325,7 +330,7 @@ class MainActivity : AppCompatActivity() {
                 val serviceFilter = scanFilter.serviceUuid?.uuid.toString()
                 Log.d("Starting BLE", "scan, filter: $serviceFilter")
                 bluetoothLifecycleState = BluetoothLowEnergyState.Scanning
-                bluetoothLowEnergyScan.startScan(null, scanSettings, scanCallback)
+                bluetoothLowEnergyScan.startScan(mutableListOf(scanFilter), scanSettings, scanCallback)
             }
             else -> {
                 isScanning = false
@@ -433,7 +438,10 @@ class MainActivity : AppCompatActivity() {
         askType: PermissionAskType,
         completion: (Boolean) -> Unit
     ) {
-        if (permissionHelper.hasPermissions(permissionHelper.permissionLocationList)) {
+        val wantedPermissions = permissionHelper.permissionLocationList
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+            completion(true)
+        }else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || permissionHelper.hasPermissions(wantedPermissions)) {
             completion(true)
         } else {
             runOnUiThread {
