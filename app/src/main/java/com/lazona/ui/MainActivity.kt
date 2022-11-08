@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var binding: ActivityMainBinding
     private var isScanning = false
+    private var userWantsToScan = false
     private lateinit var bluetoothManager: BluetoothManager
     private val bluetoothAdapter: BluetoothAdapter by lazy {
         bluetoothManager.adapter
@@ -238,7 +239,8 @@ class MainActivity : AppCompatActivity() {
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         binding.searchBluetoothDevicesButton.setOnClickListener {
-            if(isScanning) {
+            userWantsToScan = !userWantsToScan
+            if(userWantsToScan) {
                     val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
                     registerReceiver(bleOnOffListener, filter)
             } else {
@@ -277,7 +279,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun restartBluetoothLowEnergyLifecycle() {
         runOnUiThread {
-            if (isScanning) {
+            if (userWantsToScan) {
                 if (connectedGatt == null) {
                     prepareAndStartBleScan()
                 } else {
