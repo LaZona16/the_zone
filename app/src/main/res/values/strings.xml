@@ -1,5 +1,4 @@
 <resources>
     <string name="app_name">La Zona</string>
-    <string name="scan_text">Escanear</string>
-    <string name="stop_scan_text">Dejar de escanear</string>
+    <string name="advertise_bluetooth">*Turn ON your Smartphone Bluetooth to Sync La Zona Products.</string>
 </resources>
