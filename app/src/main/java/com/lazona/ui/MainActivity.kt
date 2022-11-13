@@ -13,6 +13,7 @@ import android.os.*
 import android.os.Build.VERSION_CODES.S
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -27,13 +28,14 @@ import java.util.*
 
 private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 private const val WALL_CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
+private const val CCC_DESCRIPTOR_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 private const val PERMISSIONS_CODE = 100
 private const val ENABLE_BLUETOOTH_REQUEST_CODE = 1
 private const val BLUETOOTH_ALL_PERMISSIONS_REQUEST_CODE = 2
 private const val SCAN_PERIOD = 10_000L
 
 
-class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
+class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
 
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var binding: ActivityMainBinding
@@ -60,21 +62,22 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
         ParcelUuid.fromString(WALL_SERVICE_UUID)
     ).build()
     private var bluetoothLifecycleState = BluetoothLowEnergyState.Disconnected
-    private lateinit var connectWallAdapter:ConnectWallAdapter
-    private val wallsList:MutableList<BluetoothDevice> = mutableListOf()
+    private lateinit var connectWallAdapter: ConnectWallAdapter
+    private val wallsList: MutableList<BluetoothDevice> = mutableListOf()
 
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission", "NotifyDataSetChanged")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val name: String? = result.scanRecord?.deviceName ?: result.device.name
-            if(!discoveredDevices.contains(result.device.address)){
-                Log.d("DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}")
+            if (!discoveredDevices.contains(result.device.address)) {
+                Log.d(
+                    "DEVICE DETECTED",
+                    "onScanResult name=$name address= ${result.device?.address}"
+                )
                 discoveredDevices.add(result.device.address)
                 wallsList.add(result.device)
                 connectWallAdapter.notifyDataSetChanged()
             }
-            //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
-            //result.device.connectGatt(this@MainActivity, false, gattCallback)
         }
 
         override fun onScanFailed(errorCode: Int) {
@@ -92,7 +95,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
-                    Log.d("CONNECT DEVICE","Connected to $deviceAddress")
+                    Log.d("CONNECT DEVICE", "Connected to $deviceAddress")
 
                     // TODO: bonding state
 
@@ -102,7 +105,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                         gatt.discoverServices()
                     }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    Log.d("DISCONNECTED","Disconnected from $deviceAddress")
+                    Log.d("DISCONNECTED", "Disconnected from $deviceAddress")
                     setConnectedGattToNull()
                     gatt.close()
                     bluetoothLifecycleState = BluetoothLowEnergyState.Disconnected
@@ -111,7 +114,10 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             } else {
                 // TODO: random error 133 - close() and try reconnect
 
-                Log.e("ERROR","onConnectionStateChange status=$status deviceAddress=$deviceAddress, disconnecting")
+                Log.e(
+                    "ERROR",
+                    "onConnectionStateChange status=$status deviceAddress=$deviceAddress, disconnecting"
+                )
 
                 setConnectedGattToNull()
                 gatt.close()
@@ -122,7 +128,10 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
 
         @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            Log.d("DISCOVERED","onServicesDiscovered services.count=${gatt.services.size} status=$status")
+            Log.d(
+                "DISCOVERED",
+                "onServicesDiscovered services.count=${gatt.services.size} status=$status"
+            )
 
             if (status == 129 /*GATT_INTERNAL_ERROR*/) {
                 // it should be a rare case, this article recommends to disconnect:
@@ -139,11 +148,16 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             }
 
             connectedGatt = gatt
-            characteristicForRead = service.getCharacteristic(UUID.fromString(
-                WALL_CHARACTERISTIC_UUID))
-            characteristicForWrite = service.getCharacteristic(UUID.fromString(WALL_CHARACTERISTIC_UUID))
-            characteristicForIndicate = service.getCharacteristic(UUID.fromString(WALL_CHARACTERISTIC_UUID))
-
+            characteristicForRead = service.getCharacteristic(
+                UUID.fromString(
+                    WALL_CHARACTERISTIC_UUID
+                )
+            )
+            characteristicForWrite =
+                service.getCharacteristic(UUID.fromString(WALL_CHARACTERISTIC_UUID))
+            characteristicForIndicate =
+                service.getCharacteristic(UUID.fromString(WALL_CHARACTERISTIC_UUID))
+            Log.d("DEVICE_CHARACTERISTIC", characteristicForIndicate.toString())
             characteristicForIndicate?.let {
                 bluetoothLifecycleState = BluetoothLowEnergyState.ConnectedSubscribing
                 subscribeToIndications(it, gatt)
@@ -153,7 +167,11 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             }
         }
 
-        override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+        override fun onCharacteristicRead(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 val strValue = characteristic.value.toString(Charsets.UTF_8)
                 val log = "onCharacteristicRead " + when (status) {
@@ -162,6 +180,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                     else -> "error $status"
                 }
                 //Log.d(log)
+                Log.d("onCharacteristicRead", log)
                 runOnUiThread {
                     //textViewReadValue.text = strValue
                 }
@@ -170,7 +189,11 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             }
         }
 
-        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+        override fun onCharacteristicWrite(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            status: Int
+        ) {
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 val log: String = "onCharacteristicWrite " + when (status) {
                     BluetoothGatt.GATT_SUCCESS -> "OK"
@@ -184,33 +207,47 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             }
         }
 
-        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
-            if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
-                val strValue = characteristic.value.toString(Charsets.UTF_8)
-                Log.d("onCharacteristicChanged", "value=\"$strValue\"")
-                runOnUiThread {
-                    //textViewIndicateValue.text = strValue
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            super.onCharacteristicChanged(gatt, characteristic, value)
+            Log.d("onCharacteristicChanged", "${value.size}")
+        }
+
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt?,
+            characteristic: BluetoothGattCharacteristic?
+        ) {
+            if (characteristic?.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
+                if(characteristic != null){
+                    var strValue = ""
+                    for (byte in characteristic.value) {
+                        strValue += " ${byte.toInt() and 0xFF}"
+                    }
+                    Log.d("WALL_CHARACTERISTIC_CHANGED", strValue)
                 }
-            } else {
-                Log.d("onCharacteristicChanged", "unknown uuid $characteristic.uuid")
             }
         }
 
-        override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
-            if (descriptor.characteristic.uuid == UUID.fromString(WALL_SERVICE_UUID)) {
+        override fun onDescriptorWrite(
+            gatt: BluetoothGatt,
+            descriptor: BluetoothGattDescriptor,
+            status: Int
+        ) {
+            if (descriptor.characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     val value = descriptor.value
                     val isSubscribed = value.isNotEmpty() && value[0].toInt() != 0
-//                    val subscriptionText = when (isSubscribed) {
-//                        true -> getString(R.string.text_subscribed)
-//                        false -> getString(R.string.text_not_subscribed)
-//                    }
                     Log.d("onDescriptorWrite", isSubscribed.toString())
-                    runOnUiThread {
-                        // textViewSubscription.text = subscriptionText
-                    }
+
                 } else {
-                    Log.d("ERROR", "onDescriptorWrite status=$status uuid=${descriptor.uuid} char=${descriptor.characteristic.uuid}")
+                    Log.d(
+                        "ERROR",
+                        "onDescriptorWrite status=$status uuid=${descriptor.uuid} char=${descriptor.characteristic.uuid}"
+                    )
                 }
 
                 // subscription processed, consider connection is ready for use
@@ -235,7 +272,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                     }
                 }
                 BluetoothAdapter.STATE_OFF -> {
-                    Log.d("Bluetooth","onReceive: Bluetooth OFF")
+                    Log.d("Bluetooth", "onReceive: Bluetooth OFF")
                     bluetoothLowEnergyEndLifecycle()
                 }
             }
@@ -249,22 +286,22 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
 
-        connectWallAdapter = ConnectWallAdapter(wallsList,this)
+        connectWallAdapter = ConnectWallAdapter(wallsList, this)
         binding.rvScanDevices.adapter = connectWallAdapter
         setContentView(binding.root)
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         binding.ibSearchBluetooth.setOnClickListener {
             userWantsToScan = !userWantsToScan
-            if(userWantsToScan) {
-                    val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
-                    registerReceiver(bleOnOffListener, filter)
+            if (userWantsToScan) {
+                val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+                registerReceiver(bleOnOffListener, filter)
             } else {
                 unregisterReceiver(bleOnOffListener)
             }
             restartBluetoothLowEnergyLifecycle()
         }
-        Log.d("INFO","MainActivity.onCreate")
+        Log.d("INFO", "MainActivity.onCreate")
     }
 
     override fun onDestroy() {
@@ -273,15 +310,24 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
     }
 
     @SuppressLint("MissingPermission")
-    private fun subscribeToIndications(characteristic: BluetoothGattCharacteristic, gatt: BluetoothGatt) {
-        val cccdUuid = UUID.fromString(WALL_CHARACTERISTIC_UUID)
+    private fun subscribeToIndications(
+        characteristic: BluetoothGattCharacteristic,
+        gatt: BluetoothGatt
+    ) {
+        val cccdUuid = UUID.fromString(CCC_DESCRIPTOR_UUID)
+        Log.d("WALL_CHARACTERISTIC", "${characteristic.descriptors.size}")
         characteristic.getDescriptor(cccdUuid)?.let { cccDescriptor ->
             if (!gatt.setCharacteristicNotification(characteristic, true)) {
                 Log.e("ERROR", "setNotification(true) failed for ${characteristic.uuid}")
                 return
             }
-            cccDescriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
-            gatt.writeDescriptor(cccDescriptor)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeDescriptor(cccDescriptor,BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            }else{
+                cccDescriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                gatt.writeDescriptor(cccDescriptor)
+            }
         }
     }
 
@@ -341,7 +387,11 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                 val serviceFilter = scanFilter.serviceUuid?.uuid.toString()
                 Log.d("Starting BLE", "scan, filter: $serviceFilter")
                 bluetoothLifecycleState = BluetoothLowEnergyState.Scanning
-                bluetoothLowEnergyScan.startScan(mutableListOf(scanFilter), scanSettings, scanCallback)
+                bluetoothLowEnergyScan.startScan(
+                    mutableListOf(scanFilter),
+                    scanSettings,
+                    scanCallback
+                )
             }
             else -> {
                 isScanning = false
@@ -450,9 +500,12 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
         completion: (Boolean) -> Unit
     ) {
         val wantedPermissions = permissionHelper.permissionLocationList
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.S){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             completion(true)
-        }else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || permissionHelper.hasPermissions(wantedPermissions)) {
+        } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || permissionHelper.hasPermissions(
+                wantedPermissions
+            )
+        ) {
             completion(true)
         } else {
             runOnUiThread {
@@ -488,11 +541,11 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
     @SuppressLint("MissingPermission")
     private fun safeStopBleScan() {
         if (!isScanning) {
-            Log.d("DEVICE DISCONNECT","Already stopped")
+            Log.d("DEVICE DISCONNECT", "Already stopped")
             return
         }
 
-        Log.d("DEVICE DISCONNECT","Stopping BLE scan")
+        Log.d("DEVICE DISCONNECT", "Stopping BLE scan")
         isScanning = false
         bluetoothLowEnergyScan.stopScan(scanCallback)
     }
@@ -516,6 +569,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
 
     @SuppressLint("MissingPermission")
     override fun onClickListener(bluetoothDevice: BluetoothDevice) {
-        Log.d("DEVICE_TAPPED","${bluetoothDevice.name}/${bluetoothDevice.address}")
+        Log.d("DEVICE_TAPPED", "${bluetoothDevice.name}/${bluetoothDevice.address}")
+        bluetoothDevice.connectGatt(this@MainActivity, false, gattCallback)
     }
 }
