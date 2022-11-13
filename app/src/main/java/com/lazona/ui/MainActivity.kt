@@ -16,10 +16,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.os.bundleOf
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.core.permission.PermissionAskType
 import com.lazona.core.permission.PermissionHelper
 import com.lazona.databinding.ActivityMainBinding
+import com.lazona.ui.connectdevice.ConnectWallAdapter
+import com.lazona.ui.connectdevice.OnBluetoothOnClickListener
 import java.util.*
 
 private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -30,7 +33,7 @@ private const val BLUETOOTH_ALL_PERMISSIONS_REQUEST_CODE = 2
 private const val SCAN_PERIOD = 10_000L
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
 
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var binding: ActivityMainBinding
@@ -46,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var permissionResultHandlers =
         mutableMapOf<Int, (Array<out String>, IntArray) -> Unit>()
     private val activityResultHandlers = mutableMapOf<Int, (Int) -> Unit>()
-    private val discoveredDevices = mutableMapOf<String, BluetoothDevice>()
+    private val discoveredDevices = mutableSetOf<String>()
     private val scanSettings: ScanSettings = ScanSettings.Builder()
         .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
         .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
@@ -57,13 +60,18 @@ class MainActivity : AppCompatActivity() {
         ParcelUuid.fromString(WALL_SERVICE_UUID)
     ).build()
     private var bluetoothLifecycleState = BluetoothLowEnergyState.Disconnected
+    private lateinit var connectWallAdapter:ConnectWallAdapter
+    private val wallsList:MutableList<BluetoothDevice> = mutableListOf()
+
     private val scanCallback = object : ScanCallback() {
-        @SuppressLint("MissingPermission")
+        @SuppressLint("MissingPermission", "NotifyDataSetChanged")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val name: String? = result.scanRecord?.deviceName ?: result.device.name
-            if(!discoveredDevices.containsKey(result.device.address)){
+            if(!discoveredDevices.contains(result.device.address)){
                 Log.d("DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}")
-                discoveredDevices[result.device.address] = result.device
+                discoveredDevices.add(result.device.address)
+                wallsList.add(result.device)
+                connectWallAdapter.notifyDataSetChanged()
             }
             //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
             //result.device.connectGatt(this@MainActivity, false, gattCallback)
@@ -240,10 +248,13 @@ class MainActivity : AppCompatActivity() {
         permissionHelper = PermissionHelper(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
+
+        connectWallAdapter = ConnectWallAdapter(wallsList,this)
+        binding.rvScanDevices.adapter = connectWallAdapter
         setContentView(binding.root)
 
         bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        binding.searchBluetoothDevicesButton.setOnClickListener {
+        binding.ibSearchBluetooth.setOnClickListener {
             userWantsToScan = !userWantsToScan
             if(userWantsToScan) {
                     val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
@@ -323,8 +334,8 @@ class MainActivity : AppCompatActivity() {
             true -> {
                 // Stops scanning after a pre-defined scan period.
                 Handler(Looper.getMainLooper()).postDelayed({
-                    isScanning = false
                     safeStopBleScan()
+                    isScanning = false
                 }, SCAN_PERIOD)
                 isScanning = true
                 val serviceFilter = scanFilter.serviceUuid?.uuid.toString()
@@ -501,5 +512,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestPermissionArray(permissions: List<String>, requestCode: Int) {
         ActivityCompat.requestPermissions(this, permissions.toTypedArray(), requestCode)
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onClickListener(bluetoothDevice: BluetoothDevice) {
+        Log.d("DEVICE_TAPPED","${bluetoothDevice.name}/${bluetoothDevice.address}")
     }
 }
