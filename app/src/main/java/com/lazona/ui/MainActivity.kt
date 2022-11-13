@@ -154,6 +154,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
         }
 
         override fun onCharacteristicRead(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            Log.d("onCharacteristicRead",characteristic.toString())
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 val strValue = characteristic.value.toString(Charsets.UTF_8)
                 val log = "onCharacteristicRead " + when (status) {
@@ -162,7 +163,9 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                     else -> "error $status"
                 }
                 //Log.d(log)
+                Log.d("onCharacteristicRead",log)
                 runOnUiThread {
+                    Log.d("OnCharacteristicRead", strValue)
                     //textViewReadValue.text = strValue
                 }
             } else {
@@ -184,17 +187,38 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
             }
         }
 
-        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+        override fun onCharacteristicChanged(
+            gatt: BluetoothGatt,
+            characteristic: BluetoothGattCharacteristic,
+            value: ByteArray
+        ) {
+            super.onCharacteristicChanged(gatt, characteristic, value)
+            Log.d("OnCharacteristicChanged", characteristic.toString())
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 val strValue = characteristic.value.toString(Charsets.UTF_8)
                 Log.d("onCharacteristicChanged", "value=\"$strValue\"")
                 runOnUiThread {
+                    Log.d("OnCharacteristicChanged", strValue)
                     //textViewIndicateValue.text = strValue
                 }
             } else {
                 Log.d("onCharacteristicChanged", "unknown uuid $characteristic.uuid")
             }
         }
+
+//        override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
+//            Log.d("OnCharacteristicChanged", characteristic.toString())
+//            if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
+//                val strValue = characteristic.value.toString(Charsets.UTF_8)
+//                Log.d("onCharacteristicChanged", "value=\"$strValue\"")
+//                runOnUiThread {
+//                    Log.d("OnCharacteristicChanged", strValue)
+//                    //textViewIndicateValue.text = strValue
+//                }
+//            } else {
+//                Log.d("onCharacteristicChanged", "unknown uuid $characteristic.uuid")
+//            }
+//        }
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             if (descriptor.characteristic.uuid == UUID.fromString(WALL_SERVICE_UUID)) {
@@ -272,7 +296,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
         super.onDestroy()
     }
 
-    @SuppressLint("MissingPermission")
+    @SuppressLint("MissingPermission", "NewApi")
     private fun subscribeToIndications(characteristic: BluetoothGattCharacteristic, gatt: BluetoothGatt) {
         val cccdUuid = UUID.fromString(WALL_CHARACTERISTIC_UUID)
         characteristic.getDescriptor(cccdUuid)?.let { cccDescriptor ->
@@ -280,8 +304,12 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
                 Log.e("ERROR", "setNotification(true) failed for ${characteristic.uuid}")
                 return
             }
-            cccDescriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
-            gatt.writeDescriptor(cccDescriptor)
+
+//            cccDescriptor.value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
+//            gatt.writeDescriptor(cccDescriptor)
+            Log.d("Suscribe to Indications",
+                gatt.writeDescriptor(cccDescriptor, BluetoothGattDescriptor.ENABLE_INDICATION_VALUE)
+                    .toString())
         }
     }
 
@@ -517,5 +545,7 @@ class MainActivity : AppCompatActivity(),OnBluetoothOnClickListener {
     @SuppressLint("MissingPermission")
     override fun onClickListener(bluetoothDevice: BluetoothDevice) {
         Log.d("DEVICE_TAPPED","${bluetoothDevice.name}/${bluetoothDevice.address}")
+        //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
+        bluetoothDevice.connectGatt(this@MainActivity, false, gattCallback)
     }
 }
