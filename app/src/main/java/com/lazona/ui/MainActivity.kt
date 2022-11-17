@@ -13,6 +13,7 @@ import android.os.*
 import android.os.Build.VERSION_CODES.S
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -77,8 +78,6 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
                 wallsList.add(result.device)
                 connectWallAdapter.notifyDataSetChanged()
             }
-            //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
-            //result.device.connectGatt(this@MainActivity, false, gattCallback)
         }
 
         override fun onScanFailed(errorCode: Int) {
@@ -208,6 +207,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
             }
         }
 
+        @RequiresApi(Build.VERSION_CODES.TIRAMISU)
         override fun onCharacteristicChanged(
             gatt: BluetoothGatt,
             characteristic: BluetoothGattCharacteristic,
@@ -309,7 +309,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         super.onDestroy()
     }
 
-    @SuppressLint("MissingPermission", "NewApi")
+    @SuppressLint("MissingPermission")
     private fun subscribeToIndications(
         characteristic: BluetoothGattCharacteristic,
         gatt: BluetoothGatt
@@ -321,8 +321,13 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
                 Log.e("ERROR", "setNotification(true) failed for ${characteristic.uuid}")
                 return
             }
-            cccDescriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-            gatt.writeDescriptor(cccDescriptor)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                gatt.writeDescriptor(cccDescriptor,BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+            }else{
+                cccDescriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                gatt.writeDescriptor(cccDescriptor)
+            }
         }
     }
 
