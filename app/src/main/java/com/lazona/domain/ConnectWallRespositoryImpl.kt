@@ -9,3 +9,4 @@ class ConnectWallRespositoryImpl: ConnectWallRepository {
 
     }
 }
+
