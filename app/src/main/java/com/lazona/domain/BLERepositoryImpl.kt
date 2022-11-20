@@ -3,22 +3,22 @@ package com.lazona.domain
 import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.bluetooth.le.*
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
-import java.util.*
+import java.util.UUID
+
 
 private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
 private const val WALL_CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
 private const val CCC_DESCRIPTOR_UUID = "00002902-0000-1000-8000-00805f9b34fb"
 private const val SCAN_PERIOD = 10_000L
 
-class BLERepositoryImpl(context: Context) : BLERepository {
+class BLERepositoryImpl(private val context: Context) : BLERepository {
 
     private val bluetoothManager: BluetoothManager =
         context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -35,11 +35,9 @@ class BLERepositoryImpl(context: Context) : BLERepository {
         ParcelUuid.fromString(WALL_SERVICE_UUID)
     ).build()
 
-    private val scanSettings: ScanSettings = ScanSettings.Builder()
-        .setScanMode(ScanSettings.SCAN_MODE_BALANCED)
-        .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
-        .setReportDelay(0)
-        .build()
+    private val scanSettings: ScanSettings =
+        ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE).setReportDelay(0).build()
 
     private var bluetoothLifecycleState = BluetoothLowEnergyState.Disconnected
     private var characteristicForRead: BluetoothGattCharacteristic? = null
@@ -53,14 +51,11 @@ class BLERepositoryImpl(context: Context) : BLERepository {
             val name: String? = result.scanRecord?.deviceName ?: result.device.name
             if (!discoveredDevices.contains(result.device.address)) {
                 Log.d(
-                    "DEVICE DETECTED",
-                    "onScanResult name=$name address= ${result.device?.address}"
+                    "DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}"
                 )
                 discoveredDevices.add(result.device.address)
-                wallsList.add(result.device)
-                connectWallAdapter.notifyDataSetChanged()
             }
-            //bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
+            bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
             //result.device.connectGatt(this@MainActivity, false, gattCallback)
         }
 
@@ -70,7 +65,7 @@ class BLERepositoryImpl(context: Context) : BLERepository {
         }
     }
 
-    private var isScanning = false
+    private var isScanning = MutableLiveData(false)
     private var userWantsToScan = false
 
     private var connectedGatt: BluetoothGatt? = null
@@ -81,7 +76,6 @@ class BLERepositoryImpl(context: Context) : BLERepository {
             // TODO: timeout timer: if this callback not called - disconnect(), wait 120ms, close()
 
             val deviceAddress = gatt.device.address
-
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     Log.d("CONNECT DEVICE", "Connected to $deviceAddress")
@@ -156,13 +150,12 @@ class BLERepositoryImpl(context: Context) : BLERepository {
             }
         }
 
+        @SuppressLint("MissingPermission")
         override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
+            gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int
         ) {
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
-                val strValue = characteristic.value.toString(Charsets.UTF_8)
+                val strValue = gatt.readCharacteristic(characteristic)
                 val log = "onCharacteristicRead " + when (status) {
                     BluetoothGatt.GATT_SUCCESS -> "OK, value=\"$strValue\""
                     BluetoothGatt.GATT_READ_NOT_PERMITTED -> "not allowed"
@@ -170,18 +163,15 @@ class BLERepositoryImpl(context: Context) : BLERepository {
                 }
                 //Log.d(log)
                 Log.d("onCharacteristicRead", log)
-                runOnUiThread {
-                    //textViewReadValue.text = strValue
-                }
+
+
             } else {
                 Log.e("onCharacteristicRead", "unknown uuid $characteristic.uuid")
             }
         }
 
         override fun onCharacteristicWrite(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int
+            gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int
         ) {
             if (characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 val log: String = "onCharacteristicWrite " + when (status) {
@@ -197,17 +187,14 @@ class BLERepositoryImpl(context: Context) : BLERepository {
         }
 
         override fun onCharacteristicChanged(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            value: ByteArray
+            gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, value: ByteArray
         ) {
             super.onCharacteristicChanged(gatt, characteristic, value)
             Log.d("onCharacteristicChanged", "${value.size}")
         }
 
         override fun onCharacteristicChanged(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?
+            gatt: BluetoothGatt?, characteristic: BluetoothGattCharacteristic?
         ) {
             if (characteristic?.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 if (characteristic != null) {
@@ -221,9 +208,7 @@ class BLERepositoryImpl(context: Context) : BLERepository {
         }
 
         override fun onDescriptorWrite(
-            gatt: BluetoothGatt,
-            descriptor: BluetoothGattDescriptor,
-            status: Int
+            gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int
         ) {
             if (descriptor.characteristic.uuid == UUID.fromString(WALL_CHARACTERISTIC_UUID)) {
                 if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -246,33 +231,24 @@ class BLERepositoryImpl(context: Context) : BLERepository {
         }
     }
 
-    private fun prepareAndStartBleScan() {
-        ensureBluetoothCanBeUsed { isSuccess, message ->
-            Log.d("Ensure Bluetooth can be used", message)
-            if (isSuccess) {
-                safeStartBleScan(isSuccess)
-            }
-        }
-    }
-
     @SuppressLint("MissingPermission")
-    private fun restartBluetoothLowEnergyLifecycle() {
-        runOnUiThread {
-            if (userWantsToScan) {
-                if (connectedGatt == null) {
-                    prepareAndStartBleScan()
-                } else {
-                    connectedGatt?.disconnect()
-                }
+    override fun restartBluetoothLowEnergyLifecycle() {
+        if (userWantsToScan) {
+            if (connectedGatt == null) {
+                startScan()
             } else {
-                bluetoothLowEnergyEndLifecycle()
+                connectedGatt?.disconnect()
             }
+        } else {
+            bluetoothLowEnergyEndLifecycle()
         }
     }
 
+    override fun getBluetoothLowEnergyAdapter(): BluetoothAdapter = bluetoothAdapter
+
     @SuppressLint("MissingPermission")
-    private fun bluetoothLowEnergyEndLifecycle() {
-        safeStopBleScan()
+    override fun bluetoothLowEnergyEndLifecycle() {
+        stopScan()
         connectedGatt?.close()
         setConnectedGattToNull()
         bluetoothLifecycleState = BluetoothLowEnergyState.Disconnected
@@ -287,8 +263,7 @@ class BLERepositoryImpl(context: Context) : BLERepository {
 
     @SuppressLint("MissingPermission", "NewApi")
     private fun subscribeToIndications(
-        characteristic: BluetoothGattCharacteristic,
-        gatt: BluetoothGatt
+        characteristic: BluetoothGattCharacteristic, gatt: BluetoothGatt
     ) {
         val cccdUuid = UUID.fromString(CCC_DESCRIPTOR_UUID)
         Log.d("WALL_CHARACTERISTIC", "${characteristic.descriptors.size}")
@@ -304,45 +279,40 @@ class BLERepositoryImpl(context: Context) : BLERepository {
 
     @SuppressLint("MissingPermission")
     override fun startScan() {
-        if (isScanning) {
+        if (isScanning.value == true) {
             Log.d("Ensure Bluetooth can be used", "Already scanning")
             return
         }
 
         // Stops scanning after a pre-defined scan period.
         Handler(Looper.getMainLooper()).postDelayed({
-            safeStopBleScan()
-            isScanning = false
+            stopScan()
+            isScanning.postValue(false)
         }, SCAN_PERIOD)
-        isScanning = true
+        isScanning.postValue(true)
         val serviceFilter = scanFilter.serviceUuid?.uuid.toString()
         Log.d("Starting BLE", "scan, filter: $serviceFilter")
         bluetoothLifecycleState = BluetoothLowEnergyState.Scanning
         bluetoothLowEnergyScan.startScan(
-            mutableListOf(scanFilter),
-            scanSettings,
-            scanCallback
+            mutableListOf(scanFilter), scanSettings, scanCallback
         )
     }
 
     @SuppressLint("MissingPermission")
-    private fun safeStopBleScan() {
-        if (!isScanning) {
+    override fun stopScan() {
+        if (isScanning.value == false) {
             Log.d("DEVICE DISCONNECT", "Already stopped")
             return
         }
 
         Log.d("DEVICE DISCONNECT", "Stopping BLE scan")
-        isScanning = false
+        isScanning.postValue(false)
         bluetoothLowEnergyScan.stopScan(scanCallback)
     }
 
-    override fun stopScan() {
-        TODO("Not yet implemented")
-    }
-
-    override fun connectDevice() {
-        TODO("Not yet implemented")
+    @SuppressLint("MissingPermission")
+    override fun connectDevice(bluetoothDevice: BluetoothDevice) {
+        bluetoothDevice.connectGatt(context, false, gattCallback)
     }
 
     override fun sendData(data: String) {
@@ -352,4 +322,6 @@ class BLERepositoryImpl(context: Context) : BLERepository {
     override fun isBluetoothEnabled(): Boolean {
         TODO("Not yet implemented")
     }
+
+    override fun getLifeCycleState() = bluetoothLifecycleState
 }

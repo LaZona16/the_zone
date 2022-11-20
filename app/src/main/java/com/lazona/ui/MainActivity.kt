@@ -10,20 +10,17 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.*
-import android.os.Build.VERSION_CODES.S
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import androidx.core.os.bundleOf
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.core.permission.PermissionAskType
 import com.lazona.core.permission.PermissionHelper
 import com.lazona.databinding.ActivityMainBinding
-import com.lazona.domain.ConnectWallRepository
-import com.lazona.domain.ConnectWallRespositoryImpl
+import com.lazona.domain.BLERepositoryImpl
 import com.lazona.presentation.ConnectWallViewModel
 import com.lazona.presentation.ConnectWallViewModelFactory
 import com.lazona.ui.connectdevice.ConnectWallAdapter
@@ -35,11 +32,10 @@ private const val ENABLE_BLUETOOTH_REQUEST_CODE = 1
 private const val BLUETOOTH_ALL_PERMISSIONS_REQUEST_CODE = 2
 
 
-
 class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
 
-    private val viewModel by viewModels<ConnectWallViewModel>{
-        ConnectWallViewModelFactory(ConnectWallRespositoryImpl())
+    private val viewModel by viewModels<ConnectWallViewModel> {
+        ConnectWallViewModelFactory(BLERepositoryImpl(this))
     }
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var binding: ActivityMainBinding
@@ -76,18 +72,17 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
             }
         }
     }
+
     private var bleOnOffListener = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.STATE_OFF)) {
                 BluetoothAdapter.STATE_ON -> {
                     Log.d("", "onReceive: Bluetooth ON")
-                    if (bluetoothLifecycleState == BluetoothLowEnergyState.Disconnected) {
-                        restartBluetoothLowEnergyLifecycle()
-                    }
+                    viewModel.startScan()
                 }
                 BluetoothAdapter.STATE_OFF -> {
                     Log.d("Bluetooth", "onReceive: Bluetooth OFF")
-                    bluetoothLowEnergyEndLifecycle()
+                    viewModel.finishBluetoothLifeCycle()
                 }
             }
         }
@@ -111,16 +106,16 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
             if (userWantsToScan) {
                 val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
                 registerReceiver(bleOnOffListener, filter)
+                prepareAndStartBleScan()
             } else {
                 unregisterReceiver(bleOnOffListener)
             }
-            restartBluetoothLowEnergyLifecycle()
         }
         Log.d("INFO", "MainActivity.onCreate")
     }
 
     override fun onDestroy() {
-        bluetoothLowEnergyEndLifecycle()
+        viewModel.finishBluetoothLifeCycle()
         super.onDestroy()
     }
 
@@ -156,8 +151,17 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         }
     }
 
+    private fun prepareAndStartBleScan() {
+        ensureBluetoothCanBeUsed { isSuccess, message ->
+            Log.d("Ensure Bluetooth can be used", message)
+            if (isSuccess) {
+                viewModel.restartBluetoothLowEnergyLifecycle()
+            }
+        }
+    }
+
     private fun enableBluetooth(askType: PermissionAskType, completion: (Boolean) -> Unit) {
-        if (bluetoothAdapter.isEnabled) {
+        if (viewModel.bluetoothAdapter.isEnabled) {
             completion(true)
         } else {
             val enableBluetoothIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -255,6 +259,6 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     @SuppressLint("MissingPermission")
     override fun onClickListener(bluetoothDevice: BluetoothDevice) {
         Log.d("DEVICE_TAPPED", "${bluetoothDevice.name}/${bluetoothDevice.address}")
-        bluetoothDevice.connectGatt(this@MainActivity, false, gattCallback)
+        viewModel.connectToWall(bluetoothDevice)
     }
 }
