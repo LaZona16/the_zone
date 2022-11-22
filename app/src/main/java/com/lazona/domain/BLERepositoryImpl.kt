@@ -10,6 +10,11 @@ import android.os.ParcelUuid
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 
@@ -43,17 +48,23 @@ class BLERepositoryImpl(private val context: Context) : BLERepository {
     private var characteristicForRead: BluetoothGattCharacteristic? = null
     private var characteristicForWrite: BluetoothGattCharacteristic? = null
     private var characteristicForIndicate: BluetoothGattCharacteristic? = null
+    override val deviceList: MutableSharedFlow<List<BluetoothDevice>> = MutableSharedFlow()
 
-    private val discoveredDevices = mutableSetOf<String>()
+    private val coroutineScope = CoroutineScope(Dispatchers.Default)
+
+    private val discoveredDevices = mutableSetOf<BluetoothDevice>()
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission", "NotifyDataSetChanged")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val name: String? = result.scanRecord?.deviceName ?: result.device.name
-            if (!discoveredDevices.contains(result.device.address)) {
+            if (!discoveredDevices.contains(result.device)) {
                 Log.d(
                     "DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}"
                 )
-                discoveredDevices.add(result.device.address)
+                discoveredDevices.add(result.device)
+                coroutineScope.launch {
+                    deviceList.emit(discoveredDevices.toList())
+                }
             }
             bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
             //result.device.connectGatt(this@MainActivity, false, gattCallback)
@@ -233,7 +244,7 @@ class BLERepositoryImpl(private val context: Context) : BLERepository {
 
     @SuppressLint("MissingPermission")
     override fun restartBluetoothLowEnergyLifecycle() {
-        if (userWantsToScan) {
+        if (true) {
             if (connectedGatt == null) {
                 startScan()
             } else {
@@ -290,6 +301,7 @@ class BLERepositoryImpl(private val context: Context) : BLERepository {
             isScanning.postValue(false)
         }, SCAN_PERIOD)
         isScanning.postValue(true)
+        userWantsToScan = true
         val serviceFilter = scanFilter.serviceUuid?.uuid.toString()
         Log.d("Starting BLE", "scan, filter: $serviceFilter")
         bluetoothLifecycleState = BluetoothLowEnergyState.Scanning
