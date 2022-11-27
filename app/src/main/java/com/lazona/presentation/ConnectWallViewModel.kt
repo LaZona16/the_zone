@@ -3,12 +3,14 @@ package com.lazona.presentation
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.util.Log
-import androidx.lifecycle.*
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.liveData
+import androidx.lifecycle.viewModelScope
 import com.lazona.core.Output
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.domain.BLERepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class ConnectWallViewModel(private val repository: BLERepository) : ViewModel() {
 

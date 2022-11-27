@@ -16,6 +16,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.lazona.core.bluetooth.BluetoothLowEnergyHelper
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.core.permission.PermissionAskType
 import com.lazona.core.permission.PermissionHelper
@@ -38,6 +39,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         ConnectWallViewModelFactory(BLERepositoryImpl(this))
     }
     private lateinit var permissionHelper: PermissionHelper
+    private lateinit var bluetoothLowEnergyHelper: BluetoothLowEnergyHelper
     private lateinit var binding: ActivityMainBinding
     private var userWantsToScan = false
 
@@ -100,6 +102,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         binding.rvScanDevices.adapter = connectWallAdapter
         setContentView(binding.root)
 
+        bluetoothLowEnergyHelper = BluetoothLowEnergyHelper(this)
 
         binding.ibSearchBluetooth.setOnClickListener {
             userWantsToScan = !userWantsToScan
@@ -109,6 +112,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
                 prepareAndStartBleScan()
             } else {
                 unregisterReceiver(bleOnOffListener)
+                bluetoothLowEnergyHelper.stopBluetoothLowEnergyLifeCycle()
             }
         }
         Log.d("INFO", "MainActivity.onCreate")
@@ -152,10 +156,12 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     }
 
     private fun prepareAndStartBleScan() {
+
         ensureBluetoothCanBeUsed { isSuccess, message ->
             Log.d("Ensure Bluetooth can be used", message)
             if (isSuccess) {
-                viewModel.restartBluetoothLowEnergyLifecycle()
+//                viewModel.restartBluetoothLowEnergyLifecycle()
+                bluetoothLowEnergyHelper.startBluetoothLowEnergyLifeCycle()
             }
         }
     }
