@@ -16,6 +16,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import com.lazona.core.Output
 import com.lazona.core.bluetooth.BluetoothLowEnergyHelper
 import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.core.permission.PermissionAskType
@@ -110,6 +111,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
                 val filter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
                 registerReceiver(bleOnOffListener, filter)
                 prepareAndStartBleScan()
+                initObservers()
             } else {
                 unregisterReceiver(bleOnOffListener)
                 bluetoothLowEnergyHelper.stopBluetoothLowEnergyLifeCycle()
@@ -121,6 +123,18 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     override fun onDestroy() {
         viewModel.finishBluetoothLifeCycle()
         super.onDestroy()
+    }
+
+    private fun initObservers() {
+        bluetoothLowEnergyHelper.listUpdate.observe(this) {
+            if (it is Output.Success) {
+                it.data?.let { it1 ->
+                    wallsList.clear()
+                    wallsList.addAll(it1.toMutableList())
+                    connectWallAdapter.notifyDataSetChanged()
+                }
+            }
+        }
     }
 
     private fun grantBluetoothCentralPermissions(

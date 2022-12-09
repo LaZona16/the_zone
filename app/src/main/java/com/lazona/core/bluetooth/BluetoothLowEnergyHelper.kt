@@ -19,11 +19,14 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelUuid
 import android.util.Log
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.lazona.core.Output
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import java.util.ArrayList
 import java.util.UUID
 
 private const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
@@ -57,6 +60,11 @@ class BluetoothLowEnergyHelper(private val context: Context) {
     val deviceList: MutableList<BluetoothDevice> = mutableListOf()
 
     private val discoveredDevices = mutableSetOf<BluetoothDevice>()
+
+    private val _listUpdate = MutableLiveData<Output<List<BluetoothDevice>?>>()
+    val listUpdate : LiveData<Output<List<BluetoothDevice>?>>
+        get() = _listUpdate
+
     private val scanCallback = object : ScanCallback() {
         @SuppressLint("MissingPermission", "NotifyDataSetChanged")
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -66,7 +74,7 @@ class BluetoothLowEnergyHelper(private val context: Context) {
                     "DEVICE DETECTED", "onScanResult name=$name address= ${result.device?.address}"
                 )
                 discoveredDevices.add(result.device)
-                discoveredDevices.toList()
+                _listUpdate.postValue(Output.Success(discoveredDevices.toList()))
             }
 //            bluetoothLifecycleState = BluetoothLowEnergyState.Connecting
             //result.device.connectGatt(this@MainActivity, false, gattCallback)
