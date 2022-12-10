@@ -1,0 +1,5 @@
+package com.lazona.core.bluetooth
+
+const val WALL_SERVICE_UUID = "0000ffe0-0000-1000-8000-00805f9b34fb"
+const val WALL_CHARACTERISTIC_UUID = "0000ffe1-0000-1000-8000-00805f9b34fb"
+const val CCC_DESCRIPTOR_UUID = "00002902-0000-1000-8000-00805f9b34fb"

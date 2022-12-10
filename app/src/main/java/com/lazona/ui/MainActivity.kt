@@ -17,8 +17,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.lazona.core.Output
+import com.lazona.core.bluetooth.BluetoothGattCallbackImpl
 import com.lazona.core.bluetooth.BluetoothLowEnergyHelper
-import com.lazona.core.bluetooth.BluetoothLowEnergyState
 import com.lazona.core.permission.PermissionAskType
 import com.lazona.core.permission.PermissionHelper
 import com.lazona.databinding.ActivityMainBinding
@@ -103,7 +103,8 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         binding.rvScanDevices.adapter = connectWallAdapter
         setContentView(binding.root)
 
-        bluetoothLowEnergyHelper = BluetoothLowEnergyHelper(this)
+        // TODO inject the BluetoothGattCallbackImpl
+        bluetoothLowEnergyHelper = BluetoothLowEnergyHelper(this, BluetoothGattCallbackImpl())
 
         binding.ibSearchBluetooth.setOnClickListener {
             userWantsToScan = !userWantsToScan
@@ -128,9 +129,9 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     private fun initObservers() {
         bluetoothLowEnergyHelper.listUpdate.observe(this) {
             if (it is Output.Success) {
-                it.data?.let { it1 ->
+                it.data?.let { bluetoothDevices ->
                     wallsList.clear()
-                    wallsList.addAll(it1.toMutableList())
+                    wallsList.addAll(bluetoothDevices.toMutableList())
                     connectWallAdapter.notifyDataSetChanged()
                 }
             }
@@ -279,6 +280,6 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     @SuppressLint("MissingPermission")
     override fun onClickListener(bluetoothDevice: BluetoothDevice) {
         Log.d("DEVICE_TAPPED", "${bluetoothDevice.name}/${bluetoothDevice.address}")
-        viewModel.connectToWall(bluetoothDevice)
+        bluetoothLowEnergyHelper.connectDevice(bluetoothDevice)
     }
 }
