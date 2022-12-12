@@ -11,6 +11,7 @@
     <color name="greenIconosZona">#00B500</color>
     <color name="backAppZonaNegro">#0A0A09</color>
     <color name="IconosNegroZona">#181818</color>
-    <color name="LetraGrey">#707070</color>
-    <color name="GrisWhiteZona">#DBDBDB</color>
+    <color name="grey_light">#707070</color>
+    <color name="white_bone">#DBDBDB</color>
+    <color name="transparent">#00000000</color>
 </resources>

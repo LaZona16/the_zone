@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:text="@string/advertise_bluetooth"
-        android:textColor="@color/LetraGrey"
+        android:textColor="@color/grey_light"
         android:textSize="11sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -88,13 +88,27 @@
 
 
     <View
+        android:id="@+id/view2"
         android:layout_width="0dp"
         android:layout_height="1dp"
+        android:layout_marginTop="8dp"
         android:background="@android:color/darker_gray"
-        android:layout_marginTop="10dp"
         android:paddingTop="10dp"
         app:layout_constraintEnd_toEndOf="@+id/rv_scan_devices"
         app:layout_constraintStart_toStartOf="@+id/rv_scan_devices"
         app:layout_constraintTop_toBottomOf="@+id/rv_scan_devices" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_connected_devices"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        android:padding="8dp"
+        android:orientation="vertical"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintEnd_toEndOf="@+id/rv_scan_devices"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/rv_scan_devices"
+        app:layout_constraintTop_toBottomOf="@+id/view2"
+        tools:listitem="@layout/bluetooth_device_selected_item" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -26,6 +26,7 @@ import com.lazona.domain.BLERepositoryImpl
 import com.lazona.presentation.ConnectWallViewModel
 import com.lazona.presentation.ConnectWallViewModelFactory
 import com.lazona.ui.connectdevice.ConnectWallAdapter
+import com.lazona.ui.connectdevice.ScanWallAdapter
 import com.lazona.ui.connectdevice.OnBluetoothOnClickListener
 import java.util.*
 
@@ -49,8 +50,10 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         mutableMapOf<Int, (Array<out String>, IntArray) -> Unit>()
     private val activityResultHandlers = mutableMapOf<Int, (Int) -> Unit>()
 
+    private lateinit var scanWallAdapter: ScanWallAdapter
     private lateinit var connectWallAdapter: ConnectWallAdapter
-    private val wallsList: MutableList<BluetoothDevice> = mutableListOf()
+    private val scannedWallsList: MutableList<BluetoothDevice> = mutableListOf()
+    private val connectedWallsList: MutableList<BluetoothDevice> = mutableListOf()
     private fun ensureBluetoothCanBeUsed(completion: (Boolean, String) -> Unit) {
         grantBluetoothCentralPermissions(PermissionAskType.AskOnce) { isGranted ->
             if (!isGranted) {
@@ -99,8 +102,10 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
 
-        connectWallAdapter = ConnectWallAdapter(wallsList, this)
-        binding.rvScanDevices.adapter = connectWallAdapter
+        scanWallAdapter = ScanWallAdapter(scannedWallsList, this)
+        binding.rvScanDevices.adapter = scanWallAdapter
+        connectWallAdapter = ConnectWallAdapter(connectedWallsList)
+        binding.rvConnectedDevices.adapter = connectWallAdapter
         setContentView(binding.root)
 
         // TODO inject the BluetoothGattCallbackImpl
@@ -130,9 +135,9 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         bluetoothLowEnergyHelper.listUpdate.observe(this) {
             if (it is Output.Success) {
                 it.data?.let { bluetoothDevices ->
-                    wallsList.clear()
-                    wallsList.addAll(bluetoothDevices.toMutableList())
-                    connectWallAdapter.notifyDataSetChanged()
+                    scannedWallsList.clear()
+                    scannedWallsList.addAll(bluetoothDevices.toMutableList())
+                    scanWallAdapter.notifyDataSetChanged()
                 }
             }
         }
@@ -281,5 +286,7 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
     override fun onClickListener(bluetoothDevice: BluetoothDevice) {
         Log.d("DEVICE_TAPPED", "${bluetoothDevice.name}/${bluetoothDevice.address}")
         bluetoothLowEnergyHelper.connectDevice(bluetoothDevice)
+        connectedWallsList.add(bluetoothDevice)
+        connectWallAdapter.notifyDataSetChanged()
     }
 }
