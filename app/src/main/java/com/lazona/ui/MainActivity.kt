@@ -111,6 +111,11 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
         // TODO inject the BluetoothGattCallbackImpl
         bluetoothLowEnergyHelper = BluetoothLowEnergyHelper(this, BluetoothGattCallbackImpl())
 
+        setUpListeners()
+        Log.d("INFO", "MainActivity.onCreate")
+    }
+
+    private fun setUpListeners() {
         binding.ibSearchBluetooth.setOnClickListener {
             userWantsToScan = !userWantsToScan
             if (userWantsToScan) {
@@ -123,7 +128,6 @@ class MainActivity : AppCompatActivity(), OnBluetoothOnClickListener {
                 bluetoothLowEnergyHelper.stopBluetoothLowEnergyLifeCycle()
             }
         }
-        Log.d("INFO", "MainActivity.onCreate")
     }
 
     override fun onDestroy() {

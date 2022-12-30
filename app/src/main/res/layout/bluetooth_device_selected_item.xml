@@ -46,6 +46,17 @@
                 tools:text="3D:A3:00:A9:74"/>
         </LinearLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/colorPickerButton"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center|end"
+            android:layout_marginEnd="16dp"
+            style="@style/Widget.MaterialComponents.ExtendedFloatingActionButton"
+            app:backgroundTint="@color/greenZonaLogo"
+            app:cornerRadius="15dp" />
+
+
     </com.google.android.material.card.MaterialCardView>
     <ImageButton
         android:layout_width="50dp"
