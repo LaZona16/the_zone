@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.TrainingActivity"
+    android:background="@color/black">
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="100dp"
+        android:layout_marginTop="32dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/minutesTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/white"
+            android:textSize="80sp"
+            tools:text="00" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:text="@string/colon_value"
+            android:textColor="@color/white"
+            android:textSize="80sp" />
+
+        <TextView
+            android:id="@+id/secondsTextView"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:textColor="@color/white"
+            android:textSize="80sp"
+            tools:text="00" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/controlButtonsLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout">
+
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:textColor="#FFEB3B"
+            android:textColorHighlight="#FFEB3B"
+            app:icon="@drawable/ic_baseline_cached_24"
+            app:iconGravity="top"
+            app:iconTint="@color/greenZonaLogo"
+            android:backgroundTint="@color/transparent"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_baseline_cached_24"
+            app:iconGravity="top"
+            app:icon="@drawable/ic_baseline_cached_24"
+            app:iconTint="@color/greenZonaLogo"
+            android:backgroundTint="@color/transparent" />
+
+        <com.google.android.material.button.MaterialButton
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/ic_baseline_cached_24"
+            app:iconGravity="top"
+            app:icon="@drawable/ic_baseline_cached_24"
+            app:iconTint="@color/greenZonaLogo"
+            android:backgroundTint="@color/transparent" />
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/numberOfPassesCardView"
+        android:layout_width="@dimen/card_size_width"
+        android:layout_height="@dimen/card_size_height"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="32dp"
+        app:cardCornerRadius="30dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/controlButtonsLayout">
+
+        <include
+            layout="@layout/number_of_passes_item"/>
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/timePerTouchesCardView"
+        android:layout_width="@dimen/card_size_width"
+        android:layout_height="@dimen/card_size_height"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="32dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/controlButtonsLayout" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/precisionCardView"
+        android:layout_width="@dimen/card_size_width"
+        android:layout_height="@dimen/card_size_height"
+        android:layout_marginTop="24dp"
+        app:layout_constraintEnd_toEndOf="@+id/numberOfPassesCardView"
+        app:layout_constraintStart_toStartOf="@+id/numberOfPassesCardView"
+        app:layout_constraintTop_toBottomOf="@+id/numberOfPassesCardView" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/forceConsistencyCardView"
+        android:layout_width="@dimen/card_size_width"
+        android:layout_height="@dimen/card_size_height"
+        android:layout_marginTop="24dp"
+        app:layout_constraintEnd_toEndOf="@+id/timePerTouchesCardView"
+        app:layout_constraintStart_toStartOf="@+id/timePerTouchesCardView"
+        app:layout_constraintTop_toBottomOf="@+id/timePerTouchesCardView" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

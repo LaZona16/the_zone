@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">La Zona</string>
     <string name="advertise_bluetooth">*Turn ON your Smartphone Bluetooth to Sync La Zona Products.</string>
+    <string name="colon_value">:</string>
+    <string name="number_of_passes_text">No. of Passes</string>
+    <string name="zero_number">0</string>
 </resources>
